@@ -54,7 +54,7 @@ Am PC in der Eingabeaufforderung:
 adb shell pm disable-user --user 0 com.google.android.tungsten.setupwraith
 ```
 
-> Verhindert dass der Setup-Wizard nach dem Konto-Entfernen erneut startet.
+Verhindert dass der Setup-Wizard nach dem Konto-Entfernen erneut startet.
 
 ---
 
@@ -153,7 +153,7 @@ Im Kontextmenü → **„Auto-Update"** (kein PIN):
 | Neustart | ✅ | Gerät neu starten |
 | Info | ❌ | Version, Gerät, IP, TeamViewer |
 
-> Standard-PIN: `0000` – wird in `gradle.properties` als `MENU_PIN` konfiguriert.
+Standard-PIN: `0000` – wird in `gradle.properties` als `MENU_PIN` konfiguriert.
 
 ---
 
