@@ -1,0 +1,79 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 36
+
+    // Signing: erst globale gradle.properties, dann lokale credentials-Datei
+    def signingAlias    = project.hasProperty('KEY_ALIAS')      ? KEY_ALIAS      : ''
+    def signingKeyPwd   = project.hasProperty('KEY_PASSWORD')   ? KEY_PASSWORD   : ''
+    def signingStorePwd = project.hasProperty('STORE_PASSWORD') ? STORE_PASSWORD : ''
+    def signingStore    = project.hasProperty('STORE_FILE')     ? STORE_FILE     : ''
+
+    // Fallback: keystore/credentials Datei (für CI auf GitHub)
+    def keyPropsFile = rootProject.file('keystore/credentials')
+    if (keyPropsFile.exists()) {
+        def keyProps = new Properties()
+        keyProps.load(new FileInputStream(keyPropsFile))
+        if (!signingAlias)    signingAlias    = keyProps['keyAlias']      ?: ''
+        if (!signingKeyPwd)   signingKeyPwd   = keyProps['keyPassword']   ?: ''
+        if (!signingStorePwd) signingStorePwd = keyProps['storePassword'] ?: ''
+        if (!signingStore)    signingStore    = keyProps['storeFile']     ?: ''
+    }
+
+    def menuPin   = project.hasProperty('MENU_PIN')   ? MENU_PIN   : '"0000"'
+    def updateUrl = project.hasProperty('UPDATE_URL') ? UPDATE_URL : '"https://api.github.com/repos/w3coach/W3Coach_TV/releases/latest"'
+
+    signingConfigs {
+        release {
+            keyAlias      signingAlias
+            keyPassword   signingKeyPwd
+            storeFile     signingStore ? file(signingStore) : null
+            storePassword signingStorePwd
+        }
+    }
+
+    defaultConfig {
+        applicationId   "com.w3coach.w3coachtv"
+        minSdkVersion   33
+        targetSdkVersion 36
+        versionCode     rootProject.ext.verCode
+        versionName     rootProject.ext.verName
+        multiDexEnabled true
+        setProperty("archivesBaseName", "w3coachtv-$versionName")
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField 'String', "UPDATE_URL", updateUrl
+        buildConfigField 'String', "MENU_PIN",   menuPin
+        buildConfigField "String", "BUILD_TIME", "\"" + System.currentTimeMillis().toString() + "\""
+    }
+
+    buildTypes {
+        debug   { }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    namespace 'com.w3coach.w3coachtv'
+    lint {
+        abortOnError false
+        warningsAsErrors false
+    }
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.core:core:1.16.0'
+}

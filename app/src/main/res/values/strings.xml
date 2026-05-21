@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">W3Coach TV</string>
+
+    <!-- Context menu -->
+    <string name="menu_url1">URL 1</string>
+    <string name="menu_url2">URL 2</string>
+    <string name="menu_url3">URL 3</string>
+    <string name="menu_zoom">Zoom</string>
+    <string name="menu_autoupdate">Auto-Update</string>
+    <string name="menu_reboot">Restart</string>
+    <string name="menu_about">Info</string>
+
+    <!-- Dialogs -->
+    <string name="dlg_zoom_title">Zoom</string>
+    <string name="dlg_autoupdate_title">Auto-Update</string>
+    <string name="dlg_autoupdate_interval">Interval (hours)</string>
+    <string name="dlg_reboot_title">Reboot</string>
+    <string name="dlg_reboot_msg">Reboot device now?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Permissions -->
+    <string name="perm_title">Permissions Required</string>
+    <string name="perm_overlay">Display Over Other Apps</string>
+    <string name="perm_install">Install Unknown Apps</string>
+    <string name="perm_accessibility">Accessibility</string>
+    <string name="perm_grant">Grant</string>
+    <string name="perm_done">Done</string>
+
+    <!-- About -->
+    <string name="about_version">Version</string>
+    <string name="about_device">Device</string>
+    <string name="about_ip">IP Address</string>
+
+    <!-- PIN Dialog -->
+    <string name="pin_title">Enter PIN</string>
+    <string name="pin_enter">Please enter your PIN</string>
+    <string name="pin_ok">OK</string>
+    <string name="pin_wrong">Incorrect PIN</string>
+
+    <!-- System Settings -->
+    <string name="menu_settings">System Settings</string>
+    <!-- QuickSupport -->
+    <string name="quick_support">QuickSupport</string>
+    <string name="quick_support_install_msg">TeamViewer QuickSupport is not installed. Download and install now?</string>
+    <string name="quick_support_downloading">TeamViewer QuickSupport is downloading…</string>
+    <string name="quick_support_download_failed">Download failed. Please check your network connection.</string>
+    <string name="quick_support_not_found">QuickSupport could not be started.</string>
+    <string name="quick_support_addon_install_msg">TeamViewer Add-on is required. Download and install now?</string>
+    <string name="quick_support_addon_accessibility_msg">Please enable the TeamViewer add-on in Accessibility Settings.</string>
+    <string name="quick_support_installing">Installing…</string>
+</resources>
