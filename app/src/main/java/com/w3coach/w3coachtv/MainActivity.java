@@ -73,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         AutoUpdateJob.schedule(this);
+        // Screensaver bei jedem Resume deaktivieren
+        disableScreensaver();
         // Permissions nach Rückkehr von System-Settings neu prüfen
         if (permissionManager != null) permissionManager.checkAndRequest();
     }
@@ -122,7 +124,10 @@ public class MainActivity extends AppCompatActivity {
         String[] setupPackages = {
             "com.google.android.tungsten.setupwraith",
             "com.google.android.partnersetup",
-            "com.google.android.chromecast.setupcustomization"
+            "com.google.android.chromecast.setupcustomization",
+            // Screensaver / Ambient Mode
+            "com.google.android.apps.tv.dreamx",
+            "com.google.android.backdrop"
         };
         for (String pkg : setupPackages) {
             try {
