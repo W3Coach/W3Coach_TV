@@ -16,7 +16,7 @@ Den Setup-Wizard **vollständig** durchlaufen:
 - Google-Konto einrichten (zwingend erforderlich um ADB freizuschalten)
 - Alle weiteren Setup-Schritte abschließen
 
-> ⚠️ Den Setup-Wizard **nicht** abbrechen – ADB ist erst nach vollständiger Einrichtung verfügbar.
+⚠️ Den Setup-Wizard **nicht** abbrechen – ADB ist erst nach vollständiger Einrichtung verfügbar.
 
 ---
 
@@ -39,7 +39,7 @@ Den Setup-Wizard **vollständig** durchlaufen:
 
 ### 1.4 Google-Konto entfernen
 
-> ⚠️ Dieser Schritt ist zwingend erforderlich, da `set-device-owner` mit aktivem Google-Konto fehlschlägt.
+⚠️ Dieser Schritt ist zwingend erforderlich, da `set-device-owner` mit aktivem Google-Konto fehlschlägt.
 
 1. `Einstellungen` → `Konten & Anmelden`
 2. Google-Konto auswählen
@@ -175,7 +175,7 @@ Im Kontextmenü → **„Auto-Update"** (kein PIN):
 
 Bei einem Factory Reset muss der gesamte Ablauf ab **Abschnitt 1** wiederholt werden.
 
-> ⚠️ Nach einem Factory Reset ist der Device Owner nicht mehr gesetzt. `set-device-owner` muss erneut ausgeführt werden.
+⚠️ Nach einem Factory Reset ist der Device Owner nicht mehr gesetzt. `set-device-owner` muss erneut ausgeführt werden.
 
 **Factory Reset per Hardware:**
 1. Netzkabel ziehen
