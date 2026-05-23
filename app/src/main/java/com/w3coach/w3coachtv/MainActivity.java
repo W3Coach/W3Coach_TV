@@ -1,6 +1,7 @@
 package com.w3coach.w3coachtv;
 
 import android.annotation.SuppressLint;
+import java.io.File;
 import android.app.admin.DevicePolicyManager;
 import android.content.Intent;
 import android.content.ComponentName;
@@ -36,11 +37,21 @@ public class MainActivity extends AppCompatActivity {
     private final Handler longPressHandler  = new Handler();
     private       boolean longPressTriggered = false;
 
+    private final Handler networkRetryHandler = new Handler();
+    private static final int NETWORK_RETRY_MS = 3000;
+    private android.widget.FrameLayout rootLayout;
+    private android.widget.LinearLayout noNetworkView;
+    private android.net.ConnectivityManager.NetworkCallback networkCallback;
+    private boolean urlLoaded = false;
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Bildschirm dauerhaft an
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         // Vollbild
         getWindow().getDecorView().setSystemUiVisibility(
@@ -51,9 +62,20 @@ public class MainActivity extends AppCompatActivity {
         prefs  = new Prefs(this);
         tvMenu = new TvMenu(this);
 
-        // WebView als Content-View
+        // Root Layout: WebView + NoNetwork-Overlay
+        rootLayout = new android.widget.FrameLayout(this);
         webView = new WebView(this);
-        setContentView(webView);
+        rootLayout.addView(webView, new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
+
+        // "Kein Netzwerk" Overlay
+        noNetworkView = buildNoNetworkView();
+        rootLayout.addView(noNetworkView, new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
+
+        setContentView(rootLayout);
 
         setupWebView();
         setupBackHandler();
@@ -62,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         // Permissions beim Erststart
         permissionManager = new PermissionManager(this, this::onPermissionsGranted);
         permissionManager.checkAndRequest();
+
     }
 
     @Override
@@ -75,11 +98,28 @@ public class MainActivity extends AppCompatActivity {
         AutoUpdateJob.schedule(this);
         // Screensaver bei jedem Resume deaktivieren
         disableScreensaver();
+        registerNetworkCallback();
         // Permissions nach Rückkehr von System-Settings neu prüfen
         if (permissionManager != null) permissionManager.checkAndRequest();
     }
 
     // ── WebView Setup ─────────────────────────────────────────────────────────
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // VPN-Berechtigung Ergebnis an WireGuardManager weitergeben
+        if (requestCode == 1001) {
+            new WireGuardManager(this).onVpnPermissionResult(resultCode);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // Nach Laufzeit-Permission erneut prüfen
+        if (permissionManager != null) permissionManager.checkAndRequest();
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     private void setupWebView() {
@@ -158,20 +198,46 @@ public class MainActivity extends AppCompatActivity {
         ComponentName admin = new ComponentName(this, KioskAdminReceiver.class);
         if (dpm != null && dpm.isDeviceOwnerApp(getPackageName())) {
             dpm.setKeyguardDisabledFeatures(admin, DevicePolicyManager.KEYGUARD_DISABLE_FEATURES_ALL);
+            dpm.setMaximumTimeToLock(admin, 0); // Bildschirm nie sperren
             dpm.setLockTaskPackages(admin, new String[]{
                     getPackageName(),
-                    "com.teamviewer.quicksupport.market"
+                    "com.teamviewer.quicksupport.market",
+                    "com.android.bluetooth",
+                    "com.android.bluetooth.chromecast",
+                    "com.google.android.bluetooth",
+                    "com.google.android.bluetooth.kirkwood",
+                    "com.android.settings",
+                    "com.android.tv.settings",
+                    "com.wireguard.android",
+                    "com.amaze.filemanager"
             });
 
             // App als preferred Home Activity setzen (überlebt Neustart)
+            // Zuerst alle bestehenden Home-Preferences entfernen
+            dpm.clearPackagePersistentPreferredActivities(admin, getPackageName());
             ComponentName mainActivity = new ComponentName(this, MainActivity.class);
             android.content.IntentFilter homeFilter = new android.content.IntentFilter(Intent.ACTION_MAIN);
             homeFilter.addCategory(Intent.CATEGORY_HOME);
             homeFilter.addCategory(Intent.CATEGORY_DEFAULT);
+            homeFilter.addCategory("android.intent.category.LEANBACK_LAUNCHER");
             dpm.addPersistentPreferredActivity(admin, homeFilter, mainActivity);
+
+            // Google TV Launcher deaktivieren
+            dpm.setApplicationHidden(admin, "com.google.android.apps.tv.launcherx", true);
+            dpm.setApplicationHidden(admin, "com.google.android.tvlauncher", true);
 
             // Setup-Wizard permanent deaktivieren
             disableSetupWizard(dpm, admin);
+
+            // Storage Permission still erteilen (für w3coach_urls.json)
+            try {
+                dpm.setPermissionGrantState(admin, getPackageName(),
+                        "android.permission.READ_MEDIA_DOCUMENTS",
+                        DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
+                dpm.setPermissionGrantState(admin, getPackageName(),
+                        "android.permission.READ_EXTERNAL_STORAGE",
+                        DevicePolicyManager.PERMISSION_GRANT_STATE_GRANTED);
+            } catch (Exception ignored) {}
 
             // Screensaver/Daydream deaktivieren
             disableScreensaver();
@@ -186,13 +252,135 @@ public class MainActivity extends AppCompatActivity {
         url2 = prefs.url2();
         url3 = prefs.url3();
 
-        // Starte mit URL 1 (oder zeige Menü wenn noch keine URL konfiguriert)
-        if (!url1.isEmpty()) {
-            loadUrl(url1);
+        startWithNetworkCheck();
+    }
+
+    private void registerNetworkCallback() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                getSystemService(CONNECTIVITY_SERVICE);
+        if (cm == null) return;
+
+        networkCallback = new android.net.ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(android.net.Network network) {
+                runOnUiThread(() -> {
+                    showNoNetwork(false);
+                    networkRetryHandler.removeCallbacksAndMessages(null);
+                    // URL laden falls noch nicht geladen
+                    if (!urlLoaded) {
+                        urlLoaded = true;
+                        if (!url1.isEmpty()) loadUrl(url1);
+                        else tvMenu.show();
+                    }
+                });
+            }
+
+            @Override
+            public void onLost(android.net.Network network) {
+                runOnUiThread(() -> showNoNetwork(true));
+            }
+        };
+
+        android.net.NetworkRequest request = new android.net.NetworkRequest.Builder()
+                .addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        cm.registerNetworkCallback(request, networkCallback);
+    }
+
+    private void unregisterNetworkCallback() {
+        if (networkCallback == null) return;
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                    getSystemService(CONNECTIVITY_SERVICE);
+            if (cm != null) cm.unregisterNetworkCallback(networkCallback);
+        } catch (Exception ignored) {}
+        networkCallback = null;
+    }
+
+
+    private void startWithNetworkCheck() {
+        if (isNetworkAvailable()) {
+            showNoNetwork(false);
+            urlLoaded = true;
+            if (!url1.isEmpty()) {
+                loadUrl(url1);
+            } else {
+                tvMenu.show();
+            }
         } else {
-            tvMenu.show();
+            showNoNetwork(true);
+            networkRetryHandler.postDelayed(this::startWithNetworkCheck, NETWORK_RETRY_MS);
         }
     }
+
+    private boolean isNetworkAvailable() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                getSystemService(CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        android.net.Network network = cm.getActiveNetwork();
+        if (network == null) return false;
+        android.net.NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null && caps.hasCapability(
+                android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    private android.app.AlertDialog noNetworkDialog;
+
+    private void showNoNetwork(boolean show) {
+        noNetworkView.setVisibility(show ? android.view.View.VISIBLE : android.view.View.GONE);
+        if (show) {
+            showNoNetworkDialog();
+        } else {
+            if (noNetworkDialog != null && noNetworkDialog.isShowing()) {
+                noNetworkDialog.dismiss();
+            }
+        }
+    }
+
+    private void showNoNetworkDialog() {
+        if (noNetworkDialog != null && noNetworkDialog.isShowing()) return;
+        noNetworkDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Kein Netzwerk")
+                .setMessage("Keine Internetverbindung. Netzwerkeinstellungen öffnen?")
+                .setCancelable(false)
+                .setPositiveButton("Ja", (d, w) ->
+                        startActivity(new Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)))
+                .setNegativeButton("Später", null)
+                .create();
+        noNetworkDialog.show();
+    }
+
+    private android.widget.LinearLayout buildNoNetworkView() {
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setGravity(android.view.Gravity.CENTER);
+        layout.setBackgroundColor(0xFF000000);
+
+        android.widget.TextView icon = new android.widget.TextView(this);
+        icon.setText("🌐");
+        icon.setTextSize(72f);
+        icon.setGravity(android.view.Gravity.CENTER);
+
+        android.widget.TextView cross = new android.widget.TextView(this);
+        cross.setText("✕");
+        cross.setTextSize(48f);
+        cross.setTextColor(0xFFDD0000);
+        cross.setGravity(android.view.Gravity.CENTER);
+
+        android.widget.TextView msg = new android.widget.TextView(this);
+        msg.setText("No network");
+        msg.setTextSize(24f);
+        msg.setTextColor(0xFFAAAAAA);
+        msg.setGravity(android.view.Gravity.CENTER);
+        msg.setPadding(0, 24, 0, 0);
+
+        layout.addView(icon);
+        layout.addView(cross);
+        layout.addView(msg);
+        layout.setVisibility(android.view.View.GONE);
+        return layout;
+    }
+
 
     // ── URL Handling ──────────────────────────────────────────────────────────
 
@@ -229,6 +417,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int keyCode = event.getKeyCode();
+
+        // Tab → Fokus weiterschalten (für Bluetooth-Tastatur)
+        if (keyCode == KeyEvent.KEYCODE_TAB && event.getAction() == KeyEvent.ACTION_DOWN) {
+            android.view.View focused = getCurrentFocus();
+            if (focused != null) {
+                focused.focusSearch(android.view.View.FOCUS_FORWARD).requestFocus();
+                return true;
+            }
+        }
 
         // Long-Press OK/Enter → Kontextmenü
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {

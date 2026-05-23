@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">W3Coach TV</string>
-
     <!-- Context menu -->
     <string name="menu_url1">URL 1</string>
     <string name="menu_url2">URL 2</string>
     <string name="menu_url3">URL 3</string>
     <string name="menu_zoom">Zoom</string>
     <string name="menu_autoupdate">Auto-Update</string>
-    <string name="menu_reboot">Restart</string>
-    <string name="menu_about">Info</string>
-
+    <string name="menu_reboot">Reboot</string>
+    <string name="menu_about">About</string>
     <!-- Dialogs -->
     <string name="dlg_zoom_title">Zoom</string>
     <string name="dlg_autoupdate_title">Auto-Update</string>
@@ -21,35 +19,38 @@
     <string name="no">No</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
-
+    <string name="load_default">Load default</string>
+    <string name="load_default_not_found">No configuration file found</string>
     <!-- Permissions -->
-    <string name="perm_title">Permissions Required</string>
-    <string name="perm_overlay">Display Over Other Apps</string>
-    <string name="perm_install">Install Unknown Apps</string>
+    <string name="perm_title">Permissions required</string>
+    <string name="perm_overlay">Display over other apps</string>
+    <string name="perm_install">Install unknown apps</string>
     <string name="perm_accessibility">Accessibility</string>
     <string name="perm_grant">Grant</string>
     <string name="perm_done">Done</string>
-
     <!-- About -->
     <string name="about_version">Version</string>
     <string name="about_device">Device</string>
-    <string name="about_ip">IP Address</string>
-
+    <string name="about_ip">IP address</string>
     <!-- PIN Dialog -->
     <string name="pin_title">Enter PIN</string>
-    <string name="pin_enter">Please enter your PIN</string>
+    <string name="pin_enter">Please enter PIN</string>
     <string name="pin_ok">OK</string>
-    <string name="pin_wrong">Incorrect PIN</string>
-
+    <string name="pin_wrong">Wrong PIN</string>
     <!-- System Settings -->
-    <string name="menu_settings">System Settings</string>
+    <string name="menu_settings">System settings</string>
+    <string name="menu_system">System</string>
+    <string name="menu_wireguard">WireGuard VPN</string>
     <!-- QuickSupport -->
     <string name="quick_support">QuickSupport</string>
     <string name="quick_support_install_msg">TeamViewer QuickSupport is not installed. Download and install now?</string>
-    <string name="quick_support_downloading">TeamViewer QuickSupport is downloading…</string>
-    <string name="quick_support_download_failed">Download failed. Please check your network connection.</string>
+    <string name="quick_support_downloading">Downloading TeamViewer QuickSupport…</string>
+    <string name="quick_support_download_failed">Download failed. Please check network connection.</string>
     <string name="quick_support_not_found">QuickSupport could not be started.</string>
-    <string name="quick_support_addon_install_msg">TeamViewer Add-on is required. Download and install now?</string>
-    <string name="quick_support_addon_accessibility_msg">Please enable the TeamViewer add-on in Accessibility Settings.</string>
+    <string name="quick_support_addon_install_msg">TeamViewer Addon is required. Download and install now?</string>
+    <string name="quick_support_addon_accessibility_msg">Please activate the TeamViewer Addon in Accessibility settings.</string>
     <string name="quick_support_installing">Installing…</string>
+    <string name="wg_connect">Connect VPN</string>
+    <string name="wg_disconnect">Disconnect VPN</string>
+    <string name="wg_configure">Configure VPN</string>
 </resources>

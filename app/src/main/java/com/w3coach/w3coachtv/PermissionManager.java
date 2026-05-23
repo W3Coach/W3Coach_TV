@@ -38,13 +38,28 @@ public class PermissionManager {
 
         if (!prefs.firstRun()) { callback.onAllGranted(); return; }
 
-        if (!hasOverlay())          { requestOverlay();       return; }
-        if (!hasInstallPackages())  { requestInstallPackages(); return; }
-        if (!hasAccessibility())    { requestAccessibility();  return; }
+        if (!hasStoragePermission()) { requestStoragePermission(); return; }
+        if (!hasOverlay())           { requestOverlay();           return; }
+        if (!hasInstallPackages())   { requestInstallPackages();   return; }
+        if (!hasAccessibility())     { requestAccessibility();     return; }
 
         prefs.setFirstRun(false);
         callback.onAllGranted();
     }
+
+    // ── Storage Permission ────────────────────────────────────────────────────
+
+    private static final String PERM_READ_MEDIA_DOCS = "android.permission.READ_MEDIA_DOCUMENTS";
+
+    private boolean hasStoragePermission() {
+        return activity.checkSelfPermission(PERM_READ_MEDIA_DOCS)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestStoragePermission() {
+        activity.requestPermissions(new String[]{PERM_READ_MEDIA_DOCS}, 1001);
+    }
+
 
     // ── Overlay ───────────────────────────────────────────────────────────────
 

@@ -17,50 +17,75 @@ import android.widget.Spinner;
  * Kontextmenü für den TV-Betrieb (Long-Press OK).
  *
  * Frei zugänglich: Zoom, Auto-Update, Info
- * PIN-geschützt:   URL 1-3, Reboot, Systemeinstellungen
+ * PIN-geschützt:   System (URLs, Systemeinstellungen, Neustart)
  */
 public class TvMenu {
-
-    private static final String URL_PRESET = "https://w3coach.de/";
 
     private static final String[] ZOOM_LABELS = {
         "75%","80%","85%","90%","95%","100%","105%","110%","115%","120%","125%"
     };
 
-    private final MainActivity activity;
-    private final Prefs         prefs;
+    private final MainActivity   activity;
+    private final Prefs          prefs;
+    private final WireGuardManager wgManager;
 
     public TvMenu(MainActivity activity) {
-        this.activity = activity;
-        this.prefs    = new Prefs(activity);
+        this.activity  = activity;
+        this.prefs     = new Prefs(activity);
+        this.wgManager = new WireGuardManager(activity);
     }
 
     // ── Hauptmenü ─────────────────────────────────────────────────────────────
 
     public void show() {
         String[] items = {
-            activity.getString(R.string.menu_url1) + "  " + truncate(prefs.url1()),
-            activity.getString(R.string.menu_url2) + "  " + truncate(prefs.url2()),
-            activity.getString(R.string.menu_url3) + "  " + truncate(prefs.url3()),
             activity.getString(R.string.menu_zoom),
             activity.getString(R.string.menu_autoupdate),
-            activity.getString(R.string.menu_settings),
-            activity.getString(R.string.menu_reboot),
+            WireGuardService.isConnected
+                    ? activity.getString(R.string.wg_disconnect)
+                    : activity.getString(R.string.wg_connect),
             activity.getString(R.string.menu_about),
+            activity.getString(R.string.menu_system),
         };
 
         new AlertDialog.Builder(activity)
                 .setTitle(R.string.app_name)
                 .setItems(items, (dialog, which) -> {
                     switch (which) {
-                        case 0: withPin(() -> editUrl(1)); break; // PIN-Schutz für URL 1-3
-                        case 1: withPin(() -> editUrl(2)); break; // PIN-Schutz für URL 1-3
-                        case 2: withPin(() -> editUrl(3)); break; // PIN-Schutz für URL 1-3
-                        case 3: showZoom();       break; // frei zugänglich: Zoom
-                        case 4: showAutoUpdate(); break; // frei zugänglich: Auto-Update
-                        case 5: withPin(this::openSystemSettings); break; // PIN-Schutz für Systemeinstellungen
-                        case 6: withPin(this::confirmReboot);      break; // PIN-Schutz für Reboot
-                        case 7: openAbout();      break;// frei zugänglich: About
+                        case 0: showZoom();                     break;
+                        case 1: showAutoUpdate();               break;
+                        case 2: wgManager.toggle();             break;
+                        case 3: openAbout();                    break;
+                        case 4: withPin(this::showSystemMenu);  break;
+                    }
+                })
+                .show();
+    }
+
+    // ── System-Untermenü (PIN-geschützt) ──────────────────────────────────────
+
+    private void showSystemMenu() {
+        String[] items = {
+            activity.getString(R.string.menu_url1) + "  " + truncate(prefs.url1()),
+            activity.getString(R.string.menu_url2) + "  " + truncate(prefs.url2()),
+            activity.getString(R.string.menu_url3) + "  " + truncate(prefs.url3()),
+            activity.getString(R.string.menu_autoupdate),
+            activity.getString(R.string.wg_configure),
+            activity.getString(R.string.menu_settings),
+            activity.getString(R.string.menu_reboot),
+        };
+
+        new AlertDialog.Builder(activity)
+                .setTitle(R.string.menu_system)
+                .setItems(items, (dialog, which) -> {
+                    switch (which) {
+                        case 0: editUrl(1);                      break;
+                        case 1: editUrl(2);                      break;
+                        case 2: editUrl(3);                      break;
+                        case 3: showAutoUpdate();                break;
+                        case 4: wgManager.showConfigDialog();    break;
+                        case 5: openSystemSettings();            break;
+                        case 6: confirmReboot();                 break;
                     }
                 })
                 .show();
@@ -72,21 +97,17 @@ public class TvMenu {
         new PinDialog(activity, action::run).show();
     }
 
+
+
     // ── URL bearbeiten ────────────────────────────────────────────────────────
 
     private void editUrl(int nr) {
         String current = nr == 1 ? prefs.url1() : nr == 2 ? prefs.url2() : prefs.url3();
 
-        // Zeige nur den Suffix ohne Preset
-        String displayValue = current.startsWith(URL_PRESET)
-                ? current.substring(URL_PRESET.length())
-                : current;
-
         EditText input = new EditText(activity);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-        input.setHint(URL_PRESET + "...");
-        input.setText(displayValue);
-        input.setSelection(displayValue.length());
+        input.setText(current);
+        input.setSelection(current.length());
         input.setSingleLine(true);
         input.setOnEditorActionListener((v, actionId, event) -> {
             InputMethodManager imm = (InputMethodManager)
@@ -99,14 +120,15 @@ public class TvMenu {
                 .setTitle("URL " + nr)
                 .setView(input)
                 .setPositiveButton(R.string.save, (d, w) -> {
-                    String suffix = input.getText().toString().trim();
-                    String url = suffix.startsWith("http://") || suffix.startsWith("https://")
-                            ? suffix : URL_PRESET + suffix;
+                    String url = input.getText().toString().trim();
+                    if (!url.startsWith("http://") && !url.startsWith("https://"))
+                        url = "https://" + url;
                     if (nr == 1) { prefs.setUrl1(url); activity.loadUrl(url); }
                     else if (nr == 2) prefs.setUrl2(url);
                     else prefs.setUrl3(url);
                 })
                 .setNegativeButton(R.string.cancel, null)
+                .create()
                 .show();
     }
 

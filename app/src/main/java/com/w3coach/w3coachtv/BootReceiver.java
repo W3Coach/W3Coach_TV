@@ -20,7 +20,9 @@ public class BootReceiver extends BroadcastReceiver {
 
         // App starten
         Intent launch = new Intent(context, MainActivity.class);
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         context.startActivity(launch);
 
         // Auto-Update Job planen
