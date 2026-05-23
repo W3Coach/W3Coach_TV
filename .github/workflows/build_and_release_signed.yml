@@ -18,7 +18,7 @@ jobs:
       - name: Checkout signing repo
         uses: actions/checkout@v4
         with:
-          repository: manfred-mueller/signing
+          repository: w3coach/signing
           token: ${{ secrets.ACCESS_TOKEN }}
           path: keystore
 
