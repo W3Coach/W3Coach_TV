@@ -20,7 +20,9 @@ public class Prefs {
     public static final String KEY_WG_PUBLIC_KEY = "wgPublicKey";
     public static final String KEY_WG_CLIENT_IP  = "wgClientIp";
     public static final String KEY_WG_PRIVATE_KEY  = "wgPrivateKey";
-    public static final String KEY_WG_SPLIT_TUNNEL = "wgSplitTunnel";
+    public static final String KEY_WG_SPLIT_TUNNEL  = "wgSplitTunnel";
+    public static final String KEY_UPDATE_REBOOT_NOW  = "updateRebootNow";
+    public static final String KEY_UPDATE_REBOOT_TIME = "updateRebootTime";
 
     public static final int    DEFAULT_ZOOM         = 5;  // 75 + 5*5 = 100%
 
@@ -44,6 +46,8 @@ public class Prefs {
     public String  wgClientIp()     { return prefs.getString(KEY_WG_CLIENT_IP, "10.0.0.3/32"); }
     public String  wgPrivateKey()   { return prefs.getString(KEY_WG_PRIVATE_KEY, ""); }
     public boolean wgSplitTunnel()  { return prefs.getBoolean(KEY_WG_SPLIT_TUNNEL, true); }
+    public boolean updateRebootNow()  { return prefs.getBoolean(KEY_UPDATE_REBOOT_NOW, false); }
+    public String  updateRebootTime() { return prefs.getString(KEY_UPDATE_REBOOT_TIME, "03:00"); }
 
     public void setUrl1(String v)          { prefs.edit().putString(KEY_URL1, v).apply(); }
     public void setUrl2(String v)          { prefs.edit().putString(KEY_URL2, v).apply(); }
@@ -56,5 +60,7 @@ public class Prefs {
     public void setWgPublicKey(String v)   { prefs.edit().putString(KEY_WG_PUBLIC_KEY, v).apply(); }
     public void setWgClientIp(String v)    { prefs.edit().putString(KEY_WG_CLIENT_IP, v).apply(); }
     public void setWgPrivateKey(String v)   { prefs.edit().putString(KEY_WG_PRIVATE_KEY, v).apply(); }
-    public void setWgSplitTunnel(boolean v) { prefs.edit().putBoolean(KEY_WG_SPLIT_TUNNEL, v).apply(); }
+    public void setWgSplitTunnel(boolean v)    { prefs.edit().putBoolean(KEY_WG_SPLIT_TUNNEL, v).apply(); }
+    public void setUpdateRebootNow(boolean v)  { prefs.edit().putBoolean(KEY_UPDATE_REBOOT_NOW, v).apply(); }
+    public void setUpdateRebootTime(String v)  { prefs.edit().putString(KEY_UPDATE_REBOOT_TIME, v).apply(); }
 }

@@ -50,7 +50,15 @@
     <string name="quick_support_addon_install_msg">TeamViewer Addon wird benötigt. Jetzt installieren?</string>
     <string name="quick_support_addon_accessibility_msg">Bitte das TeamViewer Addon in den Bedienungshilfen aktivieren.</string>
     <string name="quick_support_installing">Installiere…</string>
-    <string name="wg_connect">VPN verbinden</string>
-    <string name="wg_disconnect">VPN trennen</string>
+    <string name="wg_connect">Quicksupport verbinden</string>
+    <string name="wg_disconnect">Quicksupport trennen</string>
     <string name="wg_configure">VPN konfigurieren</string>
+    <string name="menu_check_update">Jetzt auf Update prüfen</string>
+    <string name="update_available">Update verfügbar</string>
+    <string name="update_none">Kein Update verfügbar</string>
+    <string name="update_installing">Update wird installiert…</string>
+    <string name="update_reboot_now">Sofort</string>
+    <string name="update_reboot_scheduled">Geplant</string>
+    <string name="update_reboot_time">Neustartzeit (HH:MM)</string>
+    <string name="update_reboot_title">Neustart nach Update</string>
 </resources>

@@ -66,6 +66,38 @@ public class AutoUpdateJob extends JobService {
         return true;
     }
 
+    private void scheduleReboot(Context ctx, long delayMs) {
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            android.app.admin.DevicePolicyManager dpm =
+                    (android.app.admin.DevicePolicyManager)
+                    ctx.getSystemService(Context.DEVICE_POLICY_SERVICE);
+            android.content.ComponentName admin =
+                    new android.content.ComponentName(ctx, KioskAdminReceiver.class);
+            if (dpm != null && dpm.isDeviceOwnerApp(ctx.getPackageName())) {
+                dpm.reboot(admin);
+            }
+        }, delayMs);
+    }
+
+    private long getDelayMillis(String time) {
+        try {
+            String[] parts = time.split(":");
+            int hour   = Integer.parseInt(parts[0]);
+            int minute = Integer.parseInt(parts[1]);
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            java.util.Calendar target = (java.util.Calendar) now.clone();
+            target.set(java.util.Calendar.HOUR_OF_DAY, hour);
+            target.set(java.util.Calendar.MINUTE, minute);
+            target.set(java.util.Calendar.SECOND, 0);
+            if (target.before(now)) target.add(java.util.Calendar.DAY_OF_MONTH, 1);
+            return target.getTimeInMillis() - now.getTimeInMillis();
+        } catch (Exception e) {
+            // Fallback: 03:00
+            return 3 * 60 * 60 * 1000L;
+        }
+    }
+
+
     private void runUpdate(JobParameters params) {
         Context ctx = getApplicationContext();
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
@@ -82,6 +114,14 @@ public class AutoUpdateJob extends JobService {
             GithubUpdateChecker.downloadApk(info.downloadUrl, apk);
             SilentInstaller.install(ctx, apk);
             apk.deleteOnExit();
+
+            // Neustart nach Installation
+            Prefs appPrefs = new Prefs(ctx);
+            if (appPrefs.updateRebootNow()) {
+                scheduleReboot(ctx, 0);
+            } else {
+                scheduleReboot(ctx, getDelayMillis(appPrefs.updateRebootTime()));
+            }
             jobFinished(params, false);
         } catch (Exception e) {
             Log.e(TAG, "Update-Fehler: " + e.getMessage(), e);

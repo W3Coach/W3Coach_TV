@@ -47,6 +47,7 @@ public class TvMenu {
             activity.getString(R.string.menu_about),
             activity.getString(R.string.menu_system),
         };
+        // Hinweis: wg_connect/disconnect = "Quicksupport verbinden/trennen"
 
         new AlertDialog.Builder(activity)
                 .setTitle(R.string.app_name)
@@ -70,6 +71,7 @@ public class TvMenu {
             activity.getString(R.string.menu_url2) + "  " + truncate(prefs.url2()),
             activity.getString(R.string.menu_url3) + "  " + truncate(prefs.url3()),
             activity.getString(R.string.menu_autoupdate),
+            activity.getString(R.string.menu_check_update),
             activity.getString(R.string.wg_configure),
             activity.getString(R.string.menu_settings),
             activity.getString(R.string.menu_reboot),
@@ -83,9 +85,10 @@ public class TvMenu {
                         case 1: editUrl(2);                      break;
                         case 2: editUrl(3);                      break;
                         case 3: showAutoUpdate();                break;
-                        case 4: wgManager.showConfigDialog();    break;
-                        case 5: openSystemSettings();            break;
-                        case 6: confirmReboot();                 break;
+                        case 4: checkUpdateNow();                break;
+                        case 5: wgManager.showConfigDialog();    break;
+                        case 6: openSystemSettings();            break;
+                        case 7: confirmReboot();                 break;
                     }
                 })
                 .show();
@@ -97,6 +100,57 @@ public class TvMenu {
         new PinDialog(activity, action::run).show();
     }
 
+
+
+    private void checkUpdateNow() {
+        ToastHelper.info(activity, activity.getString(R.string.menu_check_update) + "…");
+        new Thread(() -> {
+            try {
+                GithubUpdateChecker.UpdateInfo info = GithubUpdateChecker.checkForUpdate(
+                        BuildConfig.UPDATE_URL, BuildConfig.VERSION_CODE);
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                    if (info == null) {
+                        ToastHelper.success(activity, activity.getString(R.string.update_none));
+                        return;
+                    }
+                    new AlertDialog.Builder(activity)
+                            .setTitle(R.string.update_available)
+                            .setMessage("Version " + info.tagName)
+                            .setPositiveButton(R.string.yes, (d, w) -> installUpdateNow(info))
+                            .setNegativeButton(R.string.cancel, null)
+                            .show();
+                });
+            } catch (Exception e) {
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() ->
+                        ToastHelper.error(activity, "Update-Check fehlgeschlagen: " + e.getMessage()));
+            }
+        }).start();
+    }
+
+    private void installUpdateNow(GithubUpdateChecker.UpdateInfo info) {
+        ToastHelper.info(activity, activity.getString(R.string.update_installing));
+        new Thread(() -> {
+            try {
+                java.io.File apk = new java.io.File(activity.getCacheDir(), "w3coachtv_update.apk");
+                GithubUpdateChecker.downloadApk(info.downloadUrl, apk);
+                SilentInstaller.install(activity, apk);
+                // Manuelles Update: sofort neu starten
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    android.app.admin.DevicePolicyManager dpm =
+                            (android.app.admin.DevicePolicyManager)
+                            activity.getSystemService(android.content.Context.DEVICE_POLICY_SERVICE);
+                    android.content.ComponentName admin =
+                            new android.content.ComponentName(activity, KioskAdminReceiver.class);
+                    if (dpm != null && dpm.isDeviceOwnerApp(activity.getPackageName())) {
+                        dpm.reboot(admin);
+                    }
+                }, 5000);
+            } catch (Exception e) {
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() ->
+                        ToastHelper.error(activity, "Update fehlgeschlagen: " + e.getMessage()));
+            }
+        }).start();
+    }
 
 
     // ── URL bearbeiten ────────────────────────────────────────────────────────
@@ -157,16 +211,55 @@ public class TvMenu {
     // ── Auto-Update ───────────────────────────────────────────────────────────
 
     private void showAutoUpdate() {
-        View view = LayoutInflater.from(activity).inflate(R.layout.dlg_autoupdate, null);
-        CheckBox cbEnabled  = view.findViewById(R.id.cb_autoupdate);
-        EditText etInterval = view.findViewById(R.id.et_interval);
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(activity);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(48, 16, 48, 8);
 
+        CheckBox cbEnabled = new CheckBox(activity);
+        cbEnabled.setText(R.string.menu_autoupdate);
         cbEnabled.setChecked(prefs.autoUpdate());
+        layout.addView(cbEnabled);
+
+        // Intervall
+        android.widget.TextView tvInterval = new android.widget.TextView(activity);
+        tvInterval.setText(R.string.dlg_autoupdate_interval);
+        tvInterval.setPadding(0, 16, 0, 0);
+        layout.addView(tvInterval);
+        EditText etInterval = new EditText(activity);
+        etInterval.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         etInterval.setText(String.valueOf(prefs.updateInterval()));
+        etInterval.setSingleLine(true);
+        layout.addView(etInterval);
+
+        // Neustart nach Update
+        android.widget.TextView tvReboot = new android.widget.TextView(activity);
+        tvReboot.setText(R.string.update_reboot_title);
+        tvReboot.setPadding(0, 16, 0, 0);
+        layout.addView(tvReboot);
+
+        CheckBox cbRebootNow = new CheckBox(activity);
+        cbRebootNow.setText(R.string.update_reboot_now);
+        cbRebootNow.setChecked(prefs.updateRebootNow());
+        layout.addView(cbRebootNow);
+
+        android.widget.TextView tvRebootTime = new android.widget.TextView(activity);
+        tvRebootTime.setText(R.string.update_reboot_time);
+        tvRebootTime.setPadding(0, 8, 0, 0);
+        layout.addView(tvRebootTime);
+
+        EditText etRebootTime = new EditText(activity);
+        etRebootTime.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        etRebootTime.setText(prefs.updateRebootTime());
+        etRebootTime.setSingleLine(true);
+        etRebootTime.setEnabled(!prefs.updateRebootNow());
+        layout.addView(etRebootTime);
+
+        cbRebootNow.setOnCheckedChangeListener((btn, checked) ->
+                etRebootTime.setEnabled(!checked));
 
         new AlertDialog.Builder(activity)
                 .setTitle(R.string.dlg_autoupdate_title)
-                .setView(view)
+                .setView(layout)
                 .setPositiveButton(R.string.save, (d, w) -> {
                     boolean enabled = cbEnabled.isChecked();
                     int interval = AutoUpdateJob.DEFAULT_INTERVAL_HOURS;
@@ -176,6 +269,8 @@ public class TvMenu {
                     } catch (NumberFormatException ignored) {}
                     prefs.setAutoUpdate(enabled);
                     prefs.setUpdateInterval(interval);
+                    prefs.setUpdateRebootNow(cbRebootNow.isChecked());
+                    prefs.setUpdateRebootTime(etRebootTime.getText().toString().trim());
                     AutoUpdateJob.schedule(activity);
                 })
                 .setNegativeButton(R.string.cancel, null)
