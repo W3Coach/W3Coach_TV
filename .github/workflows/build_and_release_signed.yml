@@ -1,0 +1,128 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+
+jobs:
+  apk:
+    name: Generate APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout signing repo
+        uses: actions/checkout@v4
+        with:
+          repository: manfred-mueller/signing
+          token: ${{ secrets.ACCESS_TOKEN }}
+          path: keystore
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: "24"
+
+      - name: Copy Gradle Properties
+        run: |
+          mkdir -p $HOME/.gradle
+          cp keystore/gradle.properties $HOME/.gradle/gradle.properties
+
+      - name: Set execution flag for gradlew
+        run: chmod +x gradlew
+
+      - name: Build APK
+        run: bash ./gradlew assembleRelease --stacktrace
+
+      - name: Get Version Name
+        id: android_version_name
+        run: |
+          versionName=`grep " verName" build.gradle | cut -d'"' -f2`
+          echo "VERSION_NAME=$versionName" >> $GITHUB_ENV
+
+      - name: Get Version Code
+        id: android_version_code
+        run: |
+          versionCode=`grep " verCode" build.gradle | awk '{ print $3; }'`
+          echo "VERSION_CODE=$versionCode" >> $GITHUB_ENV
+
+      - name: Find APK path
+        id: find_apk_path
+        run: |
+          apkPath=`find app/build/outputs/apk/release -name "*.apk" -type f`
+          echo "APK_PATH=$apkPath" >> $GITHUB_ENV
+
+      - name: Generate version JSON
+        run: |
+          echo "{\"versionCode\": ${{ env.VERSION_CODE }}, \"versionName\": \"${{ env.VERSION_NAME }}\"}" > w3coachtv.json
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: ${{ env.APK_PATH }}
+
+      - name: Upload version JSON artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-json
+          path: w3coachtv.json
+
+  release:
+    name: Release APK
+    needs: apk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get Version Name
+        id: android_version_name
+        run: |
+          versionName=`grep " verName" build.gradle | cut -d'"' -f2`
+          echo "VERSION_NAME=$versionName" >> $GITHUB_ENV
+
+      - name: Get Version Code
+        id: android_version_code
+        run: |
+          versionCode=`grep " verCode" build.gradle | awk '{ print $3; }'`
+          echo "VERSION_CODE=$versionCode" >> $GITHUB_ENV
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: apk
+
+      - name: Download version JSON
+        uses: actions/download-artifact@v4
+        with:
+          name: version-json
+
+      - name: Find APK path
+        run: |
+          apkPath=$(find . -name "*.apk" -type f)
+          echo "APK_PATH=$apkPath" >> $GITHUB_ENV
+
+      - name: Upload APK to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.APK_PATH }}
+          asset_name: w3coachtv.apk
+          tag: v${{ env.VERSION_NAME }}
+          overwrite: true
+          body: ${{ github.event.workflow_run.head_commit.message }}
+
+      - name: Upload version JSON to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: w3coachtv.json
+          asset_name: w3coachtv.json
+          tag: v${{ env.VERSION_NAME }}
+          overwrite: true
