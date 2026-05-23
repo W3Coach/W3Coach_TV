@@ -1,4 +1,6 @@
 # Project exclude paths
 /.gradle/
 /app/build/
-/build/
+/build/app/release/ 
+app/src/main/assets/teamviewer*.apk 
+app/src/main/assets/wireguard.apk 
