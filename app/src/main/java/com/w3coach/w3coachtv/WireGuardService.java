@@ -155,7 +155,7 @@ public class WireGuardService extends VpnService {
                 Log.i(TAG, "Tunnel state set successfully");
                 isConnected = true;
                 new Handler(Looper.getMainLooper()).post(() ->
-                        ToastHelper.success(WireGuardService.this, "VPN verbunden"));
+                        ToastHelper.success(WireGuardService.this, "Quicksupport verbunden"));
                 try {
                     startForeground(NOTIFICATION_ID, buildNotification(true),
                             android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
@@ -167,7 +167,7 @@ public class WireGuardService extends VpnService {
                 if (!isConnected) {
                     new Handler(Looper.getMainLooper()).post(() ->
                             ToastHelper.error(WireGuardService.this,
-                                    "VPN fehlgeschlagen: " + e.getMessage()));
+                                    "Quicksupport fehlgeschlagen: " + e.getMessage()));
                     stopSelf();
                 }
             }
@@ -187,7 +187,7 @@ public class WireGuardService extends VpnService {
             } finally {
                 isConnected = false;
                 new Handler(Looper.getMainLooper()).post(() ->
-                        ToastHelper.info(WireGuardService.this, "VPN getrennt"));
+                        ToastHelper.info(WireGuardService.this, "Quicksupport getrennt"));
                 stopForeground(true);
                 stopSelf();
             }

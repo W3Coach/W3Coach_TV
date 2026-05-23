@@ -88,7 +88,7 @@ public class WireGuardManager {
 
     private void connect() {
         if (prefs.wgPrivateKey().isEmpty() || prefs.wgPublicKey().isEmpty()) {
-            ToastHelper.warning(activity, "VPN zuerst konfigurieren");
+            ToastHelper.warning(activity, "Quicksupport zuerst konfigurieren");
             showConfigDialog();
             return;
         }
@@ -106,7 +106,7 @@ public class WireGuardManager {
         if (resultCode == Activity.RESULT_OK) {
             startVpnService();
         } else {
-            ToastHelper.error(activity, "VPN-Berechtigung verweigert");
+            ToastHelper.error(activity, "Quicksupport-Berechtigung verweigert");
         }
     }
 
@@ -114,14 +114,14 @@ public class WireGuardManager {
         Intent intent = new Intent(activity, WireGuardService.class);
         intent.setAction(WireGuardService.ACTION_CONNECT);
         activity.startService(intent);
-        ToastHelper.info(activity, "VPN verbindet…");
+        ToastHelper.info(activity, "Quicksupport verbindet…");
     }
 
     private void disconnect() {
         Intent intent = new Intent(activity, WireGuardService.class);
         intent.setAction(WireGuardService.ACTION_DISCONNECT);
         activity.startService(intent);
-        ToastHelper.info(activity, "VPN wird getrennt…");
+        ToastHelper.info(activity, "Quicksupport wird getrennt…");
     }
 
     // ── Hilfsmethoden ─────────────────────────────────────────────────────────

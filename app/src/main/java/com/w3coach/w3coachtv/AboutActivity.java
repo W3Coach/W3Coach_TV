@@ -27,6 +27,13 @@ public class AboutActivity extends AppCompatActivity {
         addLabel(layout, getString(R.string.about_version) + ": " + BuildConfig.VERSION_NAME, 18f, 0xFFAAAAAA, false);
         addLabel(layout, getString(R.string.about_device)  + ": " + Build.MODEL,   16f, 0xFFAAAAAA, false);
         addLabel(layout, getString(R.string.about_ip)      + ": " + getIpAddress(), 16f, 0xFFAAAAAA, false);
+
+        // VPN-IP anzeigen wenn Tunnel aktiv
+        if (WireGuardService.isConnected) {
+            Prefs prefs = new Prefs(this);
+            String vpnIp = prefs.wgClientIp().replace("/32", "").replace("/24", "");
+            addLabel(layout, getString(R.string.about_vpn_ip) + ": " + vpnIp, 16f, 0xFF2ECC71, false);
+        }
     }
 
     private String getIpAddress() {
