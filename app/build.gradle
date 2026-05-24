@@ -21,6 +21,7 @@ android {
     }
 
     def menuPin   = project.hasProperty('MENU_PIN')   ? MENU_PIN   : '"0000"'
+    def urlPrefix = project.hasProperty('URL_PREFIX')  ? URL_PREFIX  : '"https://w3coach.de/"'
     def updateUrl = project.hasProperty('UPDATE_URL') ? UPDATE_URL : '"https://api.github.com/repos/w3coach/W3Coach_TV/releases/latest"'
 
     signingConfigs {
@@ -43,6 +44,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField 'String', "UPDATE_URL", updateUrl
         buildConfigField 'String', "MENU_PIN",   menuPin
+        buildConfigField 'String', "URL_PREFIX", urlPrefix
         buildConfigField "String", "BUILD_TIME", "\"" + System.currentTimeMillis().toString() + "\""
     }
 
