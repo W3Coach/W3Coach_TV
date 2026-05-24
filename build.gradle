@@ -9,8 +9,8 @@ buildscript {
 }
 
 ext {
-    verCode = 41
-    verName = "1.0.3"
+    verCode = 1
+    verName = "1.0.0"
 }
 
 allprojects {
@@ -20,6 +20,6 @@ allprojects {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register("clean", Delete) {
+    delete layout.buildDirectory
 }
