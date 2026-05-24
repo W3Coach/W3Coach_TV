@@ -21,7 +21,7 @@ android {
     }
 
     def menuPin   = project.hasProperty('MENU_PIN')   ? MENU_PIN   : '"0000"'
-    def urlPrefix = project.hasProperty('URL_PREFIX')  ? URL_PREFIX  : '"https://w3coach.de/"'
+    def urlPrefix = URL_PREFIX
     def updateUrl = project.hasProperty('UPDATE_URL') ? UPDATE_URL : '"https://api.github.com/repos/w3coach/W3Coach_TV/releases/latest"'
 
     signingConfigs {
