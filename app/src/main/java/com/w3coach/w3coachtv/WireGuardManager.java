@@ -31,6 +31,36 @@ public class WireGuardManager {
         this.prefs    = new Prefs(activity);
     }
 
+    private void showVpnIpDialog() {
+        // Kurz warten bis VPN verbunden ist
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (!WireGuardService.isConnected) return;
+
+            // VPN-IP aus Prefs lesen
+            String vpnIp = prefs.wgClientIp()
+                    .replace("/32", "").replace("/24", "").trim();
+            if (vpnIp.isEmpty()) vpnIp = "unbekannt";
+
+            // Dialog aufbauen
+            android.widget.TextView tv = new android.widget.TextView(activity);
+            tv.setText(vpnIp);
+            tv.setTextSize(48f);
+            tv.setTypeface(null, android.graphics.Typeface.BOLD);
+            tv.setTextColor(0xFF0B615E);
+            tv.setGravity(android.view.Gravity.CENTER);
+            tv.setPadding(48, 48, 48, 48);
+
+            new androidx.appcompat.app.AlertDialog.Builder(activity)
+                    .setTitle("Quicksupport aktiv")
+                    .setMessage("Bitte nennen Sie dem Supporter folgende IP-Adresse:")
+                    .setView(tv)
+                    .setPositiveButton("OK", null)
+                    .setCancelable(false)
+                    .show();
+        }, 2000);
+    }
+
+
     // ── Konfigurationsdialog ──────────────────────────────────────────────────
 
     public void showConfigDialog() {
@@ -115,6 +145,7 @@ public class WireGuardManager {
         intent.setAction(WireGuardService.ACTION_CONNECT);
         activity.startService(intent);
         ToastHelper.info(activity, "Quicksupport verbindet…");
+                showVpnIpDialog();
     }
 
     private void disconnect() {

@@ -5,7 +5,9 @@ import java.io.File;
 import android.app.admin.DevicePolicyManager;
 import android.content.Intent;
 import android.content.ComponentName;
+import android.os.BatteryManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.View;
@@ -198,7 +200,16 @@ public class MainActivity extends AppCompatActivity {
         ComponentName admin = new ComponentName(this, KioskAdminReceiver.class);
         if (dpm != null && dpm.isDeviceOwnerApp(getPackageName())) {
             dpm.setKeyguardDisabledFeatures(admin, DevicePolicyManager.KEYGUARD_DISABLE_FEATURES_ALL);
-            dpm.setMaximumTimeToLock(admin, 0); // Bildschirm nie sperren
+            dpm.setMaximumTimeToLock(admin, 0);
+
+            // Display dauerhaft an (wie "Keep Display on")
+            try {
+                Settings.Global.putInt(getContentResolver(),
+                        Settings.Global.STAY_ON_WHILE_PLUGGED_IN,
+                        BatteryManager.BATTERY_PLUGGED_AC |
+                        BatteryManager.BATTERY_PLUGGED_USB |
+                        BatteryManager.BATTERY_PLUGGED_WIRELESS);
+            } catch (Exception ignored) {} // Bildschirm nie sperren
             dpm.setLockTaskPackages(admin, new String[]{
                     getPackageName(),
                     "com.teamviewer.quicksupport.market",
